@@ -1,0 +1,100 @@
+---
+# tasks file for realtime.rustfs — preflight assertions
+#
+# Runs before anything touches the host, so a missing variable or a name that
+# belongs to a protected app fails with a clear message instead of halfway
+# through a midclt call.
+
+- name: Assert ansible-core meets the minimum version
+  ansible.builtin.assert:
+    that:
+      - ansible_version.full is version('2.20', '>=')
+    fail_msg: "realtime.rustfs requires ansible-core 2.20 or newer, found {{ ansible_version.full }}"
+    quiet: true
+  tags: always
+
+- name: Assert the host is Debian-based, as TrueNAS SCALE is
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['os_family'] == 'Debian'
+    fail_msg: >-
+      realtime.rustfs runs on TrueNAS SCALE, which is Debian-based.
+      {{ inventory_hostname }} is {{ ansible_facts['os_family'] }}.
+    quiet: true
+  tags: always
+
+- name: Assert the app name is set, well formed and not protected
+  ansible.builtin.assert:
+    that:
+      - rustfs_app_name is string
+      - rustfs_app_name | length > 0
+      - rustfs_app_name is match('^[a-z0-9]([a-z0-9-]*[a-z0-9])?$')
+      - rustfs_app_name not in rustfs_protected_app_names
+    fail_msg: >-
+      rustfs_app_name must be set to lowercase letters, digits and hyphens, and
+      must not be one of rustfs_protected_app_names
+      ({{ rustfs_protected_app_names | join(', ') }}).
+      Found '{{ rustfs_app_name }}'.
+    quiet: true
+  tags: always
+
+- name: Assert the dataset parent and dataset names are usable
+  ansible.builtin.assert:
+    that:
+      - rustfs_dataset_parent is string
+      - rustfs_dataset_parent | length > 0
+      - not rustfs_dataset_parent.startswith('/')
+      - not rustfs_dataset_parent.endswith('/')
+      - rustfs_dataset_names is sequence
+      - rustfs_dataset_names is not string
+      - rustfs_dataset_names | length > 0
+      - rustfs_dataset_names | select('search', '/') | list | length == 0
+      - rustfs_dataset_names | select('equalto', '') | list | length == 0
+      - rustfs_dataset_options is mapping
+    fail_msg: >-
+      rustfs_dataset_parent must be a dataset path such as tank/apps with no
+      leading or trailing slash, rustfs_dataset_names must be a non-empty list
+      of names without slashes, and rustfs_dataset_options must be a mapping.
+    quiet: true
+  tags: always
+
+- name: Assert the S3 and console ports are set and distinct
+  ansible.builtin.assert:
+    that:
+      - rustfs_s3_port is integer
+      - rustfs_console_port is integer
+      - rustfs_s3_port >= 1024
+      - rustfs_s3_port <= 65535
+      - rustfs_console_port >= 1024
+      - rustfs_console_port <= 65535
+      - rustfs_s3_port != rustfs_console_port
+    fail_msg: >-
+      rustfs_s3_port and rustfs_console_port must be two different integers
+      between 1024 and 65535. Found {{ rustfs_s3_port }} and {{ rustfs_console_port }}.
+    quiet: true
+  tags: always
+
+- name: Assert the app values are supplied
+  ansible.builtin.assert:
+    that:
+      - rustfs_app_values is mapping
+      - rustfs_app_values | length > 0
+    fail_msg: >-
+      rustfs_app_values is empty. Its shape belongs to the catalog app: take it
+      from an existing instance as the README describes, with the credentials
+      replaced by vault variables.
+    quiet: true
+  tags: always
+
+- name: Assert the TrueNAS middleware answers
+  become: true
+  ansible.builtin.command:
+    argv:
+      - midclt
+      - call
+      - core.ping
+  register: __rustfs_ping
+  changed_when: false
+  check_mode: false
+  failed_when: __rustfs_ping.stdout | trim | from_json != 'pong'
+  tags: always
