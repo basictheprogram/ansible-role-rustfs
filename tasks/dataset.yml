@@ -1,0 +1,40 @@
+---
+# tasks file for realtime.rustfs — datasets
+#
+# Looks each dataset up first and creates only the missing ones, so a second run
+# changes nothing. Datasets that already exist are never modified or removed.
+
+- name: Look up the app datasets
+  become: true
+  ansible.builtin.command:
+    argv:
+      - midclt
+      - call
+      - pool.dataset.query
+      - "{{ [['id', '=', rustfs_dataset_parent ~ '/' ~ rustfs_dataset]] | to_json }}"
+  register: __rustfs_dataset_lookup
+  changed_when: false
+  check_mode: false
+  loop: "{{ rustfs_dataset_names }}"
+  loop_control:
+    loop_var: rustfs_dataset
+    label: "{{ rustfs_dataset }}"
+  tags: rustfs
+
+- name: Create the missing datasets
+  become: true
+  ansible.builtin.command:
+    argv:
+      - midclt
+      - call
+      - pool.dataset.create
+      - >-
+        {{ ({'name': rustfs_dataset_parent ~ '/' ~ rustfs_dataset_result.rustfs_dataset, 'type': 'FILESYSTEM'}
+        | combine(rustfs_dataset_options)) | to_json }}
+  loop: "{{ __rustfs_dataset_lookup.results }}"
+  loop_control:
+    loop_var: rustfs_dataset_result
+    label: "{{ rustfs_dataset_result.rustfs_dataset }}"
+  when: (rustfs_dataset_result.stdout | from_json | length) == 0
+  changed_when: true
+  tags: rustfs

@@ -1,0 +1,20 @@
+---
+# tasks file for realtime.rustfs — probe the S3 API
+#
+# An unsigned request to a healthy RustFS S3 API is refused with 403. Anything
+# else (a connection error, 200, 404, 5xx) fails the play. Read-only, so it
+# runs in check mode too.
+
+- name: Probe the S3 API without credentials
+  ansible.builtin.uri:
+    url: "http://{{ rustfs_probe_host }}:{{ rustfs_s3_port }}/"
+    method: GET
+    status_code: "{{ rustfs_probe_expected_status }}"
+  register: __rustfs_probe
+  until: __rustfs_probe.status == rustfs_probe_expected_status | int
+  retries: "{{ rustfs_wait_retries }}"
+  delay: "{{ rustfs_wait_delay }}"
+  changed_when: false
+  check_mode: false
+  when: not ansible_check_mode
+  tags: rustfs

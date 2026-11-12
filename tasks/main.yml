@@ -1,0 +1,22 @@
+---
+# tasks file for realtime.rustfs
+#
+# Run against a TrueNAS SCALE host. Layer 1 only: the datasets and the catalog
+# app. The buckets, access keys and IAM policies live inside RustFS and are not
+# managed here (see the README).
+
+- name: Run preflight assertions
+  ansible.builtin.include_tasks: preflight.yml
+  tags: always
+
+- name: Include dataset tasks
+  ansible.builtin.include_tasks: dataset.yml
+  tags: rustfs
+
+- name: Include app tasks
+  ansible.builtin.include_tasks: app.yml
+  tags: rustfs
+
+- name: Include verify tasks
+  ansible.builtin.include_tasks: verify.yml
+  tags: rustfs

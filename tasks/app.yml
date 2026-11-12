@@ -1,0 +1,85 @@
+---
+# tasks file for realtime.rustfs — the catalog app
+#
+# Look the app up by name; create it when missing; update it only when a value
+# the role enforces differs; wait for it to run. A healthy app that already
+# matches is never touched or restarted.
+#
+# Every task that carries the app's config has no_log: the stored config holds
+# the root credentials.
+
+- name: Look up the app
+  become: true
+  ansible.builtin.command:
+    argv:
+      - midclt
+      - call
+      - app.query
+      - "{{ [['name', '=', rustfs_app_name]] | to_json }}"
+      - '{"extra": {"retrieve_config": true}}'
+  register: __rustfs_app_lookup
+  changed_when: false
+  check_mode: false
+  no_log: true
+  tags: rustfs
+
+- name: Record the app's current state
+  ansible.builtin.set_fact:
+    __rustfs_app_current: "{{ __rustfs_app_lookup.stdout | from_json | first | default({}) }}"
+  no_log: true
+  tags: rustfs
+
+- name: Create the app
+  become: true
+  ansible.builtin.command:
+    argv:
+      - midclt
+      - call
+      - -job
+      - app.create
+      - "{{ __rustfs_app_create | to_json }}"
+  vars:
+    __rustfs_app_create:
+      app_name: "{{ rustfs_app_name }}"
+      catalog_app: "{{ rustfs_catalog_app }}"
+      train: "{{ rustfs_train }}"
+      version: "{{ rustfs_app_version }}"
+      values: "{{ rustfs_app_values }}"
+  when: __rustfs_app_current | length == 0
+  changed_when: true
+  no_log: true
+  tags: rustfs
+
+- name: Update the app when its values differ
+  become: true
+  ansible.builtin.command:
+    argv:
+      - midclt
+      - call
+      - -job
+      - app.update
+      - "{{ rustfs_app_name | to_json }}"
+      - "{{ {'values': rustfs_app_values} | to_json }}"
+  when:
+    - __rustfs_app_current | length > 0
+    - (__rustfs_app_current.config | default({})) != ((__rustfs_app_current.config | default({})) | combine(rustfs_app_values, recursive=true))
+  changed_when: true
+  no_log: true
+  tags: rustfs
+
+- name: Wait until the app is running
+  become: true
+  ansible.builtin.command:
+    argv:
+      - midclt
+      - call
+      - app.query
+      - "{{ [['name', '=', rustfs_app_name]] | to_json }}"
+  register: __rustfs_app_state
+  until: (__rustfs_app_state.stdout | from_json | first | default({})).state | default('') == 'RUNNING'
+  retries: "{{ rustfs_wait_retries }}"
+  delay: "{{ rustfs_wait_delay }}"
+  changed_when: false
+  check_mode: false
+  when: not ansible_check_mode
+  tags: rustfs
