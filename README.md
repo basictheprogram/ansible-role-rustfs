@@ -88,9 +88,10 @@ run; a key you leave out is left as TrueNAS has it.
 
 1. **Preflight** (`tasks/preflight.yml`, tag `always`): ansible-core >= 2.20, a
    Debian-family host, a well-formed app name that is not protected, a usable dataset
-   parent and names, two distinct ports in 1024 to 65535, non-empty app values,
-   `midclt call core.ping` answering `pong`, and `midclt call system.version`
-   reporting a non-CORE release at or above `rustfs_min_truenas_version`.
+   parent and names, two distinct ports in 1024 to 65535, non-empty app values with
+   no `REPLACE_ME` placeholder left in them, `midclt call core.ping` answering
+   `pong`, and `midclt call system.version` reporting a non-CORE release at or above
+   `rustfs_min_truenas_version`.
 2. **Datasets** (`tasks/dataset.yml`): look each one up, create the missing ones.
 3. **App** (`tasks/app.yml`): look it up, create it, update it when values differ,
    wait for `RUNNING`. Every task that carries the config uses `no_log`.

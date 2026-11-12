@@ -19,6 +19,9 @@ and [human-readable changelog](https://keepachangelog.com/en/1.0.0/).
 - A preflight check of the TrueNAS release: `midclt call system.version` must not
   report CORE and must be at or above the new `rustfs_min_truenas_version`
   (default `24.10`, an assumption not yet confirmed on a real host).
+- A preflight check that `rustfs_app_values` holds no `REPLACE_ME` placeholder,
+  at any depth, so an unfilled vault skeleton cannot create an app with a
+  placeholder login.
 - A molecule scenario that runs the role against a mock `midclt` and a stub S3
   endpoint, because a TrueNAS host cannot be a molecule target.
 
