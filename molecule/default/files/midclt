@@ -122,7 +122,9 @@ def main(argv):
     if not args:
         fail("no method given")
     method, *raw = args
-    print(json.dumps(call(method, [json.loads(item) for item in raw])))
+    result = call(method, [json.loads(item) for item in raw])
+    # Like the real midclt on TrueNAS, a string result is printed bare, not as JSON.
+    print(result if isinstance(result, str) else json.dumps(result))
 
 
 if __name__ == "__main__":
