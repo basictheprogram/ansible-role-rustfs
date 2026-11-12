@@ -7,13 +7,15 @@
 It understands just what realtime.rustfs calls:
 
   midclt call core.ping
+  midclt call system.version
   midclt call pool.dataset.query '[["id","=","tank/apps/x"]]'
   midclt call pool.dataset.create '{"name": "tank/apps/x", "type": "FILESYSTEM"}'
   midclt call app.query '[["name","=","x"]]' ['{"extra": {"retrieve_config": true}}']
   midclt call -job app.create '{"app_name": "x", "values": {...}, ...}'
   midclt call -job app.update '"x"' '{"values": {...}}'
 
-State lives in a JSON file, so a second run sees what the first created. Like the
+State lives in a JSON file, so a second run sees what the first created. A
+"version" key in that file overrides the string system.version returns. Like the
 real middleware, app.query only returns an app's config when asked to.
 """
 
@@ -65,6 +67,8 @@ def call(method, params):
     state = load()
     if method == "core.ping":
         return "pong"
+    if method == "system.version":
+        return state.get("version", "TrueNAS-SCALE-25.04.2.1")
     if method == "pool.dataset.query":
         return select(list(state["datasets"].values()), params[0] if params else [])
     if method == "pool.dataset.create":
