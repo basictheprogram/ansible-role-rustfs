@@ -1,0 +1,36 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+
+  environment:
+    TZ: "America/Chicago"
+    DEBIAN_FRONTEND: "noninteractive"
+
+  vars:
+    rustfs_app_name: rustfs-test
+    rustfs_dataset_parent: tank/apps
+    rustfs_s3_port: 40292
+    rustfs_console_port: 40293
+    # Anonymous fixture values. The real shape belongs to the catalog app.
+    rustfs_app_values:
+      network:
+        api_port: 40292
+        console_port: 40293
+      fixture:
+        user: testuser1
+        phrase: molecule-only
+
+  pre_tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+        force_apt_get: true
+      changed_when: false
+      when: ansible_facts.os_family == 'Debian'
+
+  tasks:
+    - name: Include role realtime.rustfs
+      ansible.builtin.include_role:
+        name: realtime.rustfs

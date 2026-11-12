@@ -1,0 +1,10 @@
+[Unit]
+Description=Stub S3 endpoint for the realtime.rustfs molecule scenario
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/mock-s3 40292
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

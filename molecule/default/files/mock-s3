@@ -1,0 +1,30 @@
+#!/usr/bin/env python3
+# ruff: noqa: ANN002, ANN201, ANN202, D101, D102, N815, S104
+# A throwaway test fixture, not role code. do_GET and friends are the names
+# BaseHTTPRequestHandler requires, and it binds every interface so the role's
+# probe can reach it on the container's own address.
+"""A stub S3 endpoint for the molecule scenario: refuse every request with 403.
+
+A real RustFS answers an unsigned request that way, which is what the role's probe
+expects. Usage: mock-s3 PORT
+"""
+
+import sys
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+
+class Refuse(BaseHTTPRequestHandler):
+    def _refuse(self):
+        self.send_response(403)
+        self.send_header("Content-Type", "application/xml")
+        self.end_headers()
+        self.wfile.write(b"<Error><Code>AccessDenied</Code></Error>")
+
+    do_GET = do_PUT = do_POST = do_DELETE = do_HEAD = _refuse
+
+    def log_message(self, *_args):
+        return
+
+
+if __name__ == "__main__":
+    HTTPServer(("0.0.0.0", int(sys.argv[1])), Refuse).serve_forever()

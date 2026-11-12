@@ -1,0 +1,46 @@
+---
+- name: Prepare molecule test host
+  hosts: all
+  become: true
+
+  environment:
+    TZ: "America/Chicago"
+    DEBIAN_FRONTEND: "noninteractive"
+
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+        force_apt_get: true
+      changed_when: false
+      when: ansible_facts['os_family'] == 'Debian'
+
+    # A TrueNAS host cannot be a molecule target, so the role runs against a mock
+    # midclt that keeps its state in a JSON file, and a stub S3 endpoint that
+    # refuses every request with 403.
+    - name: Install the mock midclt and the stub S3 endpoint
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: "/usr/local/bin/{{ item }}"
+        owner: root
+        group: root
+        mode: "0755"
+      loop:
+        - midclt
+        - mock-s3
+
+    - name: Install the stub S3 endpoint's unit file
+      ansible.builtin.copy:
+        src: mock-s3.service
+        dest: /etc/systemd/system/mock-s3.service
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Start the stub S3 endpoint
+      ansible.builtin.systemd:
+        name: mock-s3
+        daemon_reload: true
+        enabled: true
+        state: started

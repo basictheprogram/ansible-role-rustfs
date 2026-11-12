@@ -1,0 +1,125 @@
+#!/usr/bin/env python3
+# ruff: noqa: ANN001, ANN201, C901, D103, PLR0911, PTH103, PTH120, PTH123, T201
+# A throwaway test fixture, not role code: no annotations or docstrings, plain
+# print and os.path, and one dispatcher that branches per midclt method.
+"""A minimal stand-in for TrueNAS's midclt, for the molecule scenario only.
+
+It understands just what realtime.rustfs calls:
+
+  midclt call core.ping
+  midclt call pool.dataset.query '[["id","=","tank/apps/x"]]'
+  midclt call pool.dataset.create '{"name": "tank/apps/x", "type": "FILESYSTEM"}'
+  midclt call app.query '[["name","=","x"]]' ['{"extra": {"retrieve_config": true}}']
+  midclt call -job app.create '{"app_name": "x", "values": {...}, ...}'
+  midclt call -job app.update '"x"' '{"values": {...}}'
+
+State lives in a JSON file, so a second run sees what the first created. Like the
+real middleware, app.query only returns an app's config when asked to.
+"""
+
+import json
+import os
+import sys
+
+STATE_FILE = os.environ.get("MOCK_MIDCLT_STATE", "/var/lib/mock-midclt/state.json")
+
+
+def load():
+    try:
+        with open(STATE_FILE, encoding="utf-8") as handle:
+            return json.load(handle)
+    except FileNotFoundError:
+        return {"datasets": {}, "apps": {}}
+
+
+def save(state):
+    os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
+    with open(STATE_FILE, "w", encoding="utf-8") as handle:
+        json.dump(state, handle, indent=2, sort_keys=True)
+
+
+def merge(base, extra):
+    out = dict(base)
+    for key, value in extra.items():
+        if isinstance(value, dict) and isinstance(out.get(key), dict):
+            out[key] = merge(out[key], value)
+        else:
+            out[key] = value
+    return out
+
+
+def select(rows, filters):
+    for field, operator, wanted in filters:
+        if operator != "=":
+            fail(f"mock midclt only supports the = filter, got {operator}")
+        rows = [row for row in rows if row.get(field) == wanted]
+    return rows
+
+
+def fail(message):
+    print(f"mock midclt: {message}", file=sys.stderr)
+    sys.exit(1)
+
+
+def call(method, params):
+    state = load()
+    if method == "core.ping":
+        return "pong"
+    if method == "pool.dataset.query":
+        return select(list(state["datasets"].values()), params[0] if params else [])
+    if method == "pool.dataset.create":
+        data = params[0]
+        if data["name"] in state["datasets"]:
+            fail(f"dataset {data['name']} already exists")
+        state["datasets"][data["name"]] = {"id": data["name"], "type": data.get("type")}
+        save(state)
+        return state["datasets"][data["name"]]
+    if method == "app.query":
+        rows = []
+        for app in state["apps"].values():
+            row = {key: value for key, value in app.items() if key != "config"}
+            options = params[1] if len(params) > 1 else {}
+            if options.get("extra", {}).get("retrieve_config"):
+                row["config"] = app["config"]
+            rows.append(row)
+        return select(rows, params[0] if params else [])
+    if method == "app.create":
+        data = params[0]
+        if data["app_name"] in state["apps"]:
+            fail(f"app {data['app_name']} already exists")
+        state["apps"][data["app_name"]] = {
+            "name": data["app_name"],
+            "id": data["app_name"],
+            "catalog_app": data["catalog_app"],
+            "train": data["train"],
+            "version": data["version"],
+            "state": "RUNNING",
+            "config": data["values"],
+        }
+        save(state)
+        return state["apps"][data["app_name"]]["name"]
+    if method == "app.update":
+        name, data = params
+        if name not in state["apps"]:
+            fail(f"app {name} does not exist")
+        state["apps"][name]["config"] = merge(state["apps"][name]["config"], data["values"])
+        save(state)
+        return name
+    return fail(f"unsupported method {method}")
+
+
+def main(argv):
+    args = argv[1:]
+    if not args or args[0] != "call":
+        fail("only 'call' is supported")
+    args = args[1:]
+    if args and args[0] == "-job":
+        args = args[1:]
+    if not args:
+        fail("no method given")
+    method, *raw = args
+    print(json.dumps(call(method, [json.loads(item) for item in raw])))
+
+
+if __name__ == "__main__":
+    main(sys.argv)
