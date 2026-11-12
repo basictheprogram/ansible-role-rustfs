@@ -125,7 +125,7 @@ locally, use `pre-commit`, `molecule syntax` and `pytest --collect-only`.
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+[MIT](LICENSE)
 
 ## Author information
 
