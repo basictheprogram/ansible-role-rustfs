@@ -27,14 +27,14 @@ against a real TrueNAS host.
   "Prior art". Optionally test #32 on the real host and report back.
 - [ ] **Pin the RustFS version** with `rustfs_app_version` to match the running
   instance, instead of `latest`.
-- [ ] **Molecule has not run.** Molecule runs in CI only (disk use), and this role has
-  no CI yet, so the scenario has been checked statically (`molecule syntax`,
-  `pytest --collect-only`, pre-commit) but never executed. Add
-  `.github/workflows/ci.yml` (the logrotate role's is a model: one platform,
-  `debian-trixie`), create the GitHub repo, and push; the first CI run is the first
-  molecule run. Add `.github/dependabot.yml` too if you want action and hook updates.
+- [ ] **Molecule has not run.** Molecule runs in CI only (disk use). The scenario has
+  been checked statically (`molecule syntax`, `pytest --collect-only`, pre-commit)
+  and `.github/workflows/ci.yml` now exists, but the first CI run is the first
+  molecule run. Create the GitHub repo, push, and read the run with `gh`.
 - [ ] **The GitHub repo does not exist yet.** `meta/main.yml`'s `issue_tracker_url`
   points at `basictheprogram/ansible-role-rustfs`, the name the repo should have.
+  Once it exists, turn on Dependabot alerts and version updates (Settings, Advanced
+  Security): `.github/dependabot.yml` is in place but a new repo or fork has it off.
 - [ ] **Nothing uses the role yet.** A playbook and the site's host variables
   (vault variables for the credentials, the values from the running instance) belong
   in the site repo, not here.

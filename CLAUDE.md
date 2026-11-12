@@ -155,9 +155,11 @@ commit. Stop and verify between items.
 3. `tasks/dataset.yml`, `tasks/app.yml`, `tasks/verify.yml` — done; exercised against
    a mock `midclt`, never against a real host.
 4. `molecule/default` — written (mock `midclt`, stub 403 endpoint, testinfra); never
-   run, because molecule runs in CI only and the role has no CI yet.
+   run locally, because molecule runs in CI only; the workflow exists but has not
+   run, because the GitHub repo does not yet.
 5. Read the real `values` shape and confirm the open questions on a real host.
-6. Add CI, create the GitHub repo, push.
+6. CI workflow and Dependabot config — done. Create the GitHub repo, push, read the
+   first run.
 
 ### Consumer side notes
 
@@ -193,8 +195,8 @@ README.
   molecule/default/tests` — static checks that need no containers.
 * **Do not run `molecule converge`, `verify` or `test` locally.** The platform images
   use too much Docker disk. Molecule runs in CI only; push, then read the run
-  (`gh run list`, `gh run view --log-failed`). Until this role has a CI workflow, the
-  scenario is unrun.
+  (`gh run list`, `gh run view --log-failed`). The workflow is
+  `.github/workflows/ci.yml`; until the repo is pushed, the scenario is unrun.
 * To exercise the tasks without an image, install `molecule/default/files/midclt` as
   `/usr/local/bin/midclt` and run `molecule/default/files/mock-s3 <port>` inside the
   devcontainer, point a throwaway playbook at `localhost`, and remove both afterwards.
