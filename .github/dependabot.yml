@@ -1,0 +1,33 @@
+---
+version: 2
+updates:
+  # Action versions pinned in .github/workflows/*.yml. Dependabot reads this
+  # file from the default branch (ansible-core-2.20) and opens its PRs there.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "ci"
+    groups:
+      github-actions:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Hook `rev:` pins in .pre-commit-config.yaml. The `ci:` block there only
+  # matters if pre-commit.ci is installed on the repo; Dependabot does not
+  # need it.
+  - package-ecosystem: "pre-commit"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "ci"
+    groups:
+      pre-commit-hooks:
+        update-types:
+          - "minor"
+          - "patch"

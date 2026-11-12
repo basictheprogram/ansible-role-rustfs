@@ -22,6 +22,10 @@ and [human-readable changelog](https://keepachangelog.com/en/1.0.0/).
 - A preflight check that `rustfs_app_values` holds no `REPLACE_ME` placeholder,
   at any depth, so an unfilled vault skeleton cannot create an app with a
   placeholder login.
+- A GitHub Actions workflow (`.github/workflows/ci.yml`) that lints with pre-commit
+  and runs the molecule scenario on `debian-trixie` for every push to
+  `ansible-core-2.20`, and a Dependabot config for the workflow's actions and the
+  pre-commit hooks.
 - A molecule scenario that runs the role against a mock `midclt` and a stub S3
   endpoint, because a TrueNAS host cannot be a molecule target.
 
