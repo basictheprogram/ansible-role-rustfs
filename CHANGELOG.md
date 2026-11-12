@@ -1,0 +1,25 @@
+# Changelog
+
+This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
+and [human-readable changelog](https://keepachangelog.com/en/1.0.0/).
+
+---
+
+## Unreleased
+
+### Added
+
+- First scaffold of the role, from `roles/_template` and a hand-off spec.
+  It creates the datasets and the RustFS catalog app on a TrueNAS SCALE host
+  through `midclt`, waits for the app to run, and probes the S3 API for the
+  unsigned 403 a healthy instance returns.
+- Preflight assertions for the ansible-core version, the OS family, the app
+  name (including `rustfs_protected_app_names`), the dataset parent and names,
+  the ports, the app values, and the TrueNAS middleware (`core.ping`).
+- A molecule scenario that runs the role against a mock `midclt` and a stub S3
+  endpoint, because a TrueNAS host cannot be a molecule target.
+
+### Not yet done
+
+- The shape of `rustfs_app_values` is not defined by this role and has not been
+  checked against the catalog app. See `TODO.md`.
