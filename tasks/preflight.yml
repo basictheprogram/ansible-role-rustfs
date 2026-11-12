@@ -86,6 +86,21 @@
     quiet: true
   tags: always
 
+# Site host_vars skeletons carry REPLACE_ME placeholders in their vault files. The
+# check serializes the values and searches the text, so it also catches a
+# placeholder nested inside the structure. The assertion prints only its own
+# message, never the values.
+- name: Assert the app values hold no REPLACE_ME placeholder
+  ansible.builtin.assert:
+    that:
+      - rustfs_app_values | to_json is not search('REPLACE_ME')
+    fail_msg: >-
+      rustfs_app_values still contains the placeholder REPLACE_ME, usually a
+      vault variable that has not been filled in. Replace every REPLACE_ME with
+      the real value before running the role.
+    quiet: true
+  tags: always
+
 - name: Assert the TrueNAS middleware answers
   become: true
   ansible.builtin.command:
