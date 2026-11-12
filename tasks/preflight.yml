@@ -142,7 +142,8 @@
   register: __rustfs_ping
   changed_when: false
   check_mode: false
-  failed_when: __rustfs_ping.stdout | trim | from_json != 'pong'
+  # midclt prints a string result bare (pong), not as JSON ("pong"); accept both.
+  failed_when: (__rustfs_ping.stdout | trim | replace('"', '')) != 'pong'
   tags: always
 
 - name: Read the TrueNAS version
@@ -172,5 +173,7 @@
       have confirmed the app.* calls work on that release.
     quiet: true
   vars:
-    __rustfs_truenas: "{{ __rustfs_system_version.stdout | from_json }}"
+    # Bare string from midclt; the replace also accepts a JSON-quoted one.
+    __rustfs_truenas: >-
+      {{ __rustfs_system_version.stdout | trim | replace('"', '') }}
   tags: always
