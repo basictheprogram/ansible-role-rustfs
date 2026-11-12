@@ -1,0 +1,26 @@
+---
+# No role dependencies — this role is self-contained.
+dependencies: []
+
+galaxy_info:
+  namespace: realtime
+  author: "Bob Tanner"
+  role_name: rustfs
+  description: >
+    Create and maintain a RustFS (S3-compatible object store) catalog app on a
+    TrueNAS SCALE host through midclt: the datasets it stores data in, the app
+    with its ports and values, and a probe that the S3 API answers. Idempotent,
+    never prints credentials, and refuses to manage protected app names such as
+    a running production instance. For TrueNAS SCALE hosts with Docker-based
+    apps (Debian-based).
+  issue_tracker_url: https://github.com/basictheprogram/ansible-role-rustfs/issues
+  license: "MIT"
+  min_ansible_version: "2.20"
+  galaxy_tags:
+    - truenas
+    - truenasscale
+    - rustfs
+    - s3
+    - objectstorage
+    - storage
+    - midclt

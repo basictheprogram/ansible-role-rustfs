@@ -1,0 +1,5 @@
+---
+# handlers file for realtime.rustfs
+#
+# None. The role never restarts an app: TrueNAS redeploys it itself when
+# app.update changes its values.

@@ -1,0 +1,6 @@
+---
+# vars file for realtime.rustfs
+#
+# No per-distro overrides: the role only runs on TrueNAS SCALE, and nothing in it
+# varies by OS family. Do not put user-facing variables here; use
+# defaults/main.yml for those.
