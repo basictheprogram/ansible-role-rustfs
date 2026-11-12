@@ -45,7 +45,7 @@ Also out of scope, so they are your follow-up checklist after a first run:
 
 | Platform | Versions |
 |----------|----------|
-| TrueNAS SCALE (Debian-based, Docker-based apps) | not yet confirmed; see `TODO.md` |
+| TrueNAS SCALE / Community Edition (Debian-based, Docker-based apps) | 24.10 or newer, an assumption not yet confirmed on a real host (`rustfs_min_truenas_version`); CORE is refused |
 
 ## Role variables
 
@@ -65,6 +65,7 @@ the preflight until you set them.
 | `rustfs_train` | `community` | Catalog train. |
 | `rustfs_app_version` | `latest` | Applied when the app is created; an existing app is never moved. |
 | `rustfs_protected_app_names` | `[rustfs]` | Names the role refuses to manage. `[]` allows an app named `rustfs`. |
+| `rustfs_min_truenas_version` | `24.10` | Oldest TrueNAS release the role runs on. CORE is always refused. |
 | `rustfs_probe_host` | the host's address | Where the unsigned probe connects. |
 | `rustfs_probe_expected_status` | `403` | The status a healthy S3 API answers. |
 | `rustfs_wait_retries`, `rustfs_wait_delay` | `30`, `10` | How long to wait for `RUNNING` and for the probe. |
@@ -87,8 +88,9 @@ run; a key you leave out is left as TrueNAS has it.
 
 1. **Preflight** (`tasks/preflight.yml`, tag `always`): ansible-core >= 2.20, a
    Debian-family host, a well-formed app name that is not protected, a usable dataset
-   parent and names, two distinct ports in 1024 to 65535, non-empty app values, and
-   `midclt call core.ping` answering `pong`.
+   parent and names, two distinct ports in 1024 to 65535, non-empty app values,
+   `midclt call core.ping` answering `pong`, and `midclt call system.version`
+   reporting a non-CORE release at or above `rustfs_min_truenas_version`.
 2. **Datasets** (`tasks/dataset.yml`): look each one up, create the missing ones.
 3. **App** (`tasks/app.yml`): look it up, create it, update it when values differ,
    wait for `RUNNING`. Every task that carries the config uses `no_log`.

@@ -49,6 +49,10 @@ registry for it: they would handle admin credentials.
   the app values are unset by default and enforced by the preflight.
 * **Existing datasets are never modified** and an existing app is never moved to
   another catalog version or train.
+* **No collection dependency.** The `arensb.truenas` collection was checked on
+  2026-11-12 and not adopted; see "Prior art" below.
+* **Refuse CORE and old releases in the preflight**, from `midclt call system.version`,
+  with `rustfs_min_truenas_version` (24.10) as the floor.
 * **Molecule against a mock.** A TrueNAS host cannot be a molecule target, so the
   scenario uses a mock `midclt` and a stub 403 endpoint. A manual check list covers
   the real host.
@@ -59,8 +63,12 @@ If a task touches one of these, leave a `# TODO(open-q):` comment.
 
 1. **The shape of `rustfs_app_values`** has not been read from the catalog app. It
    must be taken from a running instance (see the README) before the first real run.
-2. **TrueNAS version.** Which releases support the `app.*` calls as the role uses
-   them, and the exact `-job` and argument forms, are unconfirmed.
+2. **TrueNAS version.** The preflight refuses CORE and anything below
+   `rustfs_min_truenas_version` (24.10), but that floor is an assumption: which
+   releases support the `app.*` calls as the role uses them, the exact `-job` and
+   argument forms, and the format of the `system.version` string
+   (`TrueNAS-SCALE-24.10.2.1` or `TrueNAS-25.04.2.1`; only the first run of digits
+   is compared) are unconfirmed on a real host.
 3. **`app.update` semantics:** whether it merges the supplied values into the stored
    ones or replaces them. The role assumes merge and enforces only the keys it is
    given.
@@ -69,11 +77,26 @@ If a task touches one of these, leave a `# TODO(open-q):` comment.
 5. **Version matching.** The new instance should run the same RustFS version as the
    running one, so non-production tests what production runs. Set
    `rustfs_app_version` explicitly; `latest` does not guarantee a match.
-6. **An apps module.** The `arensb.truenas` collection had no apps module when this
-   was written; confirm against its current release. If there is one, the app tasks
-   could use it.
+6. **An apps module.** `arensb.truenas` v2.0.3 still has none; see "Prior art".
 7. **Dataset create options** (such as an apps share type) are passed through
    `rustfs_dataset_options`; the right defaults are unknown.
+
+## Prior art: the `arensb.truenas` collection
+
+Checked 2026-11-12 (v2.0.3, Apache-2.0, maintained, SCALE 25.04 and 25.10 fixes).
+
+* It has no apps module. Open pull request #32 adds one for catalog apps only (no
+  custom apps, upgrades or rollbacks), open since 2025-06-11 with no review. Open pull
+  request #63 adds `truenas_middleware_call`, a raw call module.
+* Its `filesystem` module would manage datasets idempotently, with check mode. It was
+  not adopted: it would add a collection dependency, it reconciles properties of
+  datasets that already exist (this role never modifies them), and it is untested here
+  on ansible-core 2.20.
+* Its changelog shows the middleware API changing between releases (25.04: groups, NFS,
+  the client method; 25.10: certificates, SMB, `initscript`). The `app.*` calls here
+  could change the same way, so test on the actual release and again after upgrades.
+* If pull request #32 or #63 is merged, revisit: either could replace the `midclt`
+  calls, but the lookup, create, update-if-different and wait logic would stay here.
 
 ## Must not
 

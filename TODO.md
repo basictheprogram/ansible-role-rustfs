@@ -11,9 +11,20 @@ against a real TrueNAS host.
   purpose. See the README, "`rustfs_app_values`". Do not paste the output anywhere:
   it contains the root credentials.
 - [ ] **Confirm the unknowns in `DESIGN.md`, "Open questions"** on the real host:
-  the TrueNAS version and the `midclt` call forms (`app.create`, `app.update` with
-  `-job`), whether `app.update` merges or replaces values, that a second instance
-  installs beside the first, and the right dataset options.
+  the `midclt` call forms (`app.create`, `app.update` with `-job`), whether
+  `app.update` merges or replaces values, that a second instance installs beside the
+  first, and the right dataset options.
+- [ ] **Confirm the TrueNAS version check on the real host.** `midclt call
+  system.version` is assumed to return a string such as `TrueNAS-SCALE-24.10.2.1` or
+  `TrueNAS-25.04.2.1`, and 24.10 is assumed to be the first release with the `app.*`
+  calls. Check both, and adjust `rustfs_min_truenas_version` if needed. The mock
+  returns `TrueNAS-SCALE-25.04.2.1`.
+- [ ] **Test on the actual release, and again after a TrueNAS upgrade.** The
+  `arensb.truenas` changelog shows the middleware API changing between 25.04 and
+  25.10, and the `app.*` calls here could change too.
+- [ ] **Watch `arensb.truenas` pull requests #32 (an `app` module) and #63 (a raw
+  middleware-call module).** If either is merged, revisit using it; see `DESIGN.md`,
+  "Prior art". Optionally test #32 on the real host and report back.
 - [ ] **Pin the RustFS version** with `rustfs_app_version` to match the running
   instance, instead of `latest`.
 - [ ] **Molecule has not run.** Molecule runs in CI only (disk use), and this role has
@@ -27,8 +38,6 @@ against a real TrueNAS host.
 - [ ] **Nothing uses the role yet.** A playbook and the site's host variables
   (vault variables for the credentials, the values from the running instance) belong
   in the site repo, not here.
-- [ ] **Check whether the `arensb.truenas` collection has an apps module** now. If it
-  does, the app tasks could use it instead of `midclt`.
 - [ ] **Layer 2 is manual.** Buckets, access keys and IAM policies for the new
   instance are created in the RustFS console. Whether RustFS has a scriptable admin
   API was not checked.
