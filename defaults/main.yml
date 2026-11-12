@@ -1,0 +1,60 @@
+---
+# defaults file for realtime.rustfs
+#
+# Creates and maintains one RustFS catalog app, and the datasets it stores its
+# data in, on a TrueNAS SCALE host through midclt. Run it against the TrueNAS
+# host itself.
+#
+# The variables marked REQUIRED have no safe default. Preflight fails until the
+# consumer sets them, so the role cannot act on an instance by accident.
+
+# REQUIRED. Name of the app instance: lowercase letters, digits and hyphens.
+rustfs_app_name: ""
+
+# REQUIRED. Parent dataset that holds this app's datasets, for example
+# "tank/apps": no leading or trailing slash.
+rustfs_dataset_parent: ""
+
+# Datasets created under rustfs_dataset_parent for this app. One dataset named
+# after the app by default; add a second one if the app needs a separate config
+# dataset.
+rustfs_dataset_names:
+  - "{{ rustfs_app_name }}"
+
+# Extra pool.dataset.create parameters, merged over the dataset name and type.
+rustfs_dataset_options: {}
+
+# REQUIRED. The S3 API and console ports the app publishes on the host. They
+# must differ from each other and from every other app's ports on the host.
+# 0 means unset.
+rustfs_s3_port: 0
+rustfs_console_port: 0
+
+# REQUIRED. The "values" the catalog app is created with and kept at. Their
+# shape is defined by the catalog app, not by this role: take it from an
+# existing instance (see the README) and put credentials in vault variables
+# referenced from here. A key listed here is enforced on every run; a key left
+# out is left as TrueNAS has it.
+rustfs_app_values: {}
+
+# The catalog app to install. Applied when the app is created; an existing app
+# is never moved to another version or train by this role.
+rustfs_catalog_app: rustfs
+rustfs_train: community
+rustfs_app_version: latest
+
+# App names this role refuses to manage, so a mistaken rustfs_app_name cannot
+# touch a running production instance. Set to [] to manage an app named rustfs.
+rustfs_protected_app_names:
+  - rustfs
+
+# Where the unsigned S3 probe connects. The host's own address by default.
+rustfs_probe_host: "{{ ansible_facts['default_ipv4']['address'] | default('127.0.0.1') }}"
+
+# An unsigned request to the S3 API is refused with 403; that is what a healthy
+# RustFS answers.
+rustfs_probe_expected_status: 403
+
+# How long to wait for the app to report RUNNING, and for the probe to answer.
+rustfs_wait_retries: 30
+rustfs_wait_delay: 10
