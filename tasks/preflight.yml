@@ -5,6 +5,37 @@
 # belongs to a protected app fails with a clear message instead of halfway
 # through a midclt call.
 
+# Every task here reaches TrueNAS over SSH, and the SSH service is off on a fresh
+# TrueNAS. If the play gathers facts first (the default), an SSH failure surfaces
+# as Ansible's own UNREACHABLE before this role starts; set gather_facts: false on
+# the play and this check runs first, with a message that names the cause. The
+# facts the later assertions need are gathered right after it.
+- name: Check that SSH answers on the TrueNAS host
+  tags: always
+  block:
+    - name: Wait for the SSH connection
+      ansible.builtin.wait_for_connection:
+        timeout: 20
+      become: false
+      check_mode: false
+  rescue:
+    - name: Fail because SSH is not reachable on the TrueNAS host
+      ansible.builtin.fail:
+        msg: >-
+          SSH is not reachable on {{ inventory_hostname }}, so realtime.rustfs
+          cannot run. Most likely the SSH service is not running on the TrueNAS:
+          in its web UI, open System, Services and start SSH (tick Start
+          Automatically to keep it). Otherwise check that {{ ansible_user |
+          default('the connecting user') }} may log in over SSH (Credentials,
+          Local Users, SSH access), that the address and port are right, and that
+          no firewall blocks it. Ansible reported:
+          {{ ansible_failed_result.msg | default('no detail') }}
+
+- name: Gather the minimal facts the preflight needs
+  ansible.builtin.setup:
+    gather_subset: min
+  tags: always
+
 - name: Assert ansible-core meets the minimum version
   ansible.builtin.assert:
     that:
