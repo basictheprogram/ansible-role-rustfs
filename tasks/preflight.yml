@@ -98,3 +98,33 @@
   check_mode: false
   failed_when: __rustfs_ping.stdout | trim | from_json != 'pong'
   tags: always
+
+- name: Read the TrueNAS version
+  become: true
+  ansible.builtin.command:
+    argv:
+      - midclt
+      - call
+      - system.version
+  register: __rustfs_system_version
+  changed_when: false
+  check_mode: false
+  tags: always
+
+# The string looks like TrueNAS-SCALE-24.10.2.1 or TrueNAS-25.04.2.1; only the
+# first run of digits and dots is compared, so either form works.
+- name: Assert the TrueNAS release is supported
+  ansible.builtin.assert:
+    that:
+      - __rustfs_truenas is not search('CORE')
+      - __rustfs_truenas is search('[0-9]+[.][0-9]+')
+      - __rustfs_truenas | regex_search('[0-9]+([.][0-9]+)+') is version(rustfs_min_truenas_version, '>=')
+    fail_msg: >-
+      realtime.rustfs needs TrueNAS SCALE (Community Edition) {{ rustfs_min_truenas_version }}
+      or newer, because it uses the Docker-based app calls. {{ inventory_hostname }}
+      reports '{{ __rustfs_truenas }}'. Lower rustfs_min_truenas_version only if you
+      have confirmed the app.* calls work on that release.
+    quiet: true
+  vars:
+    __rustfs_truenas: "{{ __rustfs_system_version.stdout | from_json }}"
+  tags: always

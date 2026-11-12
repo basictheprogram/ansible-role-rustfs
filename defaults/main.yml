@@ -48,6 +48,11 @@ rustfs_app_version: latest
 rustfs_protected_app_names:
   - rustfs
 
+# The oldest TrueNAS release the role will run on. Docker-based apps and the app.*
+# middleware calls this role uses arrived in 24.10; that is an assumption not yet
+# confirmed on a real host (see the README). CORE is always refused.
+rustfs_min_truenas_version: "24.10"
+
 # Where the unsigned S3 probe connects. The host's own address by default.
 rustfs_probe_host: "{{ ansible_facts['default_ipv4']['address'] | default('127.0.0.1') }}"
 
